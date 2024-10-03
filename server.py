@@ -1,7 +1,7 @@
 import socket
 import threading
 
-movies_series_votes = {
+votos_filmes_series = {
     1: {"nome": "Harry Potter", "votos": 0},
     2: {"nome": "Madagascar", "votos": 0},
     3: {"nome": "Senhor dos Anéis", "votos": 0},
@@ -10,47 +10,47 @@ movies_series_votes = {
     6: {"nome": "Game of Thrones", "votos": 0}
 }
 
-# Bloqueio para evitar condições de corrida ao atualizar os votos
 lock = threading.Lock()
 
-def handle_client(client_socket):
+def gerencia_cliente(client_socket):
     try:
         client_socket.sendall("---------------------------------------------------".encode())
         client_socket.sendall("\033[31m""Bem-vindo ao sistema de votação de Filmes/Séries!\n""\033[0m".encode())
         client_socket.sendall("---------------------------------------------------".encode())
 
         while True:
-            options_message = "\nOpções disponíveis para votar:\n\n"
-            for key, value in movies_series_votes.items(): 
-                options_message += f"{key} - {value['nome']}\n" 
-            options_message += "\nEscolha uma opção de filme para votar:\n"
-            options_message += "\n=========================================\n"
-            options_message += "Digite 0 para sair\nDigite 7 para ver o resultado da votação\n"
-            options_message += "=========================================\n"
-            client_socket.sendall(options_message.encode())
+            mensagem_opcoes = "\nOpções disponíveis para votar:\n\n"
+            for i, value in votos_filmes_series.items(): 
+                mensagem_opcoes += f"{i} - {value['nome']}\n" 
+            mensagem_opcoes += "\nEscolha uma opção de filme para votar:\n"
+            mensagem_opcoes += "\n=========================================\n"
+            mensagem_opcoes += "Digite 0 para sair\nDigite 7 para ver o resultado da votação\n"
+            mensagem_opcoes += "=========================================\n"
+            client_socket.sendall(mensagem_opcoes.encode())
 
-            vote = client_socket.recv(1024).decode().strip()
-            if not vote:
+            voto = client_socket.recv(1024).decode().strip()
+            if not voto:
                 print("Cliente desconectado.")
                 break  
 
-            if vote.isdigit():
-                vote = int(vote)
-                if vote == 0:
+            if voto.isdigit():
+                voto = int(voto)
+                if voto == 0:
                     print("Cliente solicitou desconexão.")
                     client_socket.sendall("Conexão encerrada. Obrigado por participar!\n".encode())
                     break  
-                elif vote == 7:
-                    result_message = "\n""\033[30;47m" "Resultado da votação atual: ""\033[0m" "\n"
-                    result_message += "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"
+
+                elif voto == 7:
+                    mensagem_resultado = "\n""\033[30;47m" "Resultado da votação atual: ""\033[0m" "\n"
+                    mensagem_resultado += "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"
                     with lock:
-                        for key, value in movies_series_votes.items():
-                            result_message += f"{value['nome']}: {value['votos']} votos\n"
-                    client_socket.sendall(result_message.encode())
-                elif vote in movies_series_votes:
+                        for i, value in votos_filmes_series.items():
+                            mensagem_resultado += f"{value['nome']}: {value['votos']} votos\n"
+                    client_socket.sendall(mensagem_resultado.encode())
+                elif voto in votos_filmes_series:
                     with lock:
-                        movies_series_votes[vote]['votos'] += 1
-                    client_socket.sendall(f"Obrigado por votar no filme {movies_series_votes[vote]['nome']}!\n".encode())
+                        votos_filmes_series[voto]['votos'] += 1
+                    client_socket.sendall(f"Obrigado por votar no filme {votos_filmes_series[voto]['nome']}!\n".encode())
                 else:
                     client_socket.sendall("Opção inválida! Tente novamente.\n".encode())
             else:
@@ -61,17 +61,15 @@ def handle_client(client_socket):
         client_socket.close()
         print("Conexão com o cliente encerrada.")
 
-# Função principal do servidor
-def start_server(): 
+def inicia_servidor(): 
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind(("127.0.0.1", 5555)) 
-    server.listen(5)  
+    server.listen(5) 
     print("Servidor iniciado. Aguardando conexões...")
 
     while True:
         client_socket, addr = server.accept()
         print(f"Cliente conectado: {addr}")
-        # Cria uma nova thread para lidar com cada cliente
-        threading.Thread(target=handle_client, args=(client_socket,)).start() 
+        threading.Thread(target=gerencia_cliente, args=(client_socket,)).start() 
 
-start_server()
+inicia_servidor()
