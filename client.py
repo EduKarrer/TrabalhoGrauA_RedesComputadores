@@ -14,9 +14,16 @@ def start_client():
             print(server_message)
 
             # Verifica se o servidor está solicitando uma entrada
-            if "Escolha uma opção de filme para votar:" in server_message:
+            if "Escolha uma opção de filme para votar" in server_message:
                 vote = input()
-                client.sendall(vote.encode())
+
+                # Se o cliente quiser sair
+                if vote == '0':
+                    client.sendall(vote.encode())
+                    print("Desconectando do servidor...")
+                    break  # Sai do loop para encerrar a conexão
+                else:
+                    client.sendall(vote.encode())
             else:
                 # Se a mensagem não solicitar entrada, continuamos recebendo
                 continue

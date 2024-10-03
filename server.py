@@ -19,16 +19,18 @@ def handle_client(client_socket):
     try:
         # Envia a mensagem de boas-vindas
         client_socket.sendall("---------------------------------------------------".encode())
-        client_socket.sendall("Bem-vindo ao sistema de votação de Filmes/Séries!\n".encode())
+        client_socket.sendall("\033[31m""Bem-vindo ao sistema de votação de Filmes/Séries!\n""\033[0m".encode())
         client_socket.sendall("---------------------------------------------------".encode())
 
         while True:
             # Envia as opções de votação para o cliente
-            options_message = "\nOpções disponíveis para votar:\n"
-            for key, value in movies_series_votes.items():
-                options_message += f"{key} - {value['nome']}\n"
-            options_message += "7 - Ver resultado\n\n"
-            options_message += "Escolha uma opção de filme para votar:\n"
+            options_message = "\nOpções disponíveis para votar:\n\n"
+            for key, value in movies_series_votes.items(): 
+                options_message += f"{key} - {value['nome']}\n" 
+            options_message += "\nEscolha uma opção de filme para votar:\n"
+            options_message += "\n=========================================\n"
+            options_message += "Digite 0 para sair\nDigite 7 para ver o resultado da votação\n"
+            options_message += "=========================================\n"
             client_socket.sendall(options_message.encode())
 
             # Recebe a escolha do cliente
@@ -41,9 +43,15 @@ def handle_client(client_socket):
             if vote.isdigit():
                 vote = int(vote)
 
-                if vote == 7:
+                if vote == 0:
+                    print("Cliente solicitou desconexão.")
+                    client_socket.sendall("Conexão encerrada. Obrigado por participar!\n".encode())
+                    break  # Sai do loop e encerra a conexão
+
+                elif vote == 7:
                     # Envia o resultado da votação para o cliente
-                    result_message = "\nResultado da votação atual:\n"
+                    result_message = "\n""\033[30;47m" "Resultado da votação atual: ""\033[0m" "\n"
+                    result_message += "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"
                     with lock:
                         for key, value in movies_series_votes.items():
                             result_message += f"{value['nome']}: {value['votos']} votos\n"
@@ -52,7 +60,7 @@ def handle_client(client_socket):
                     # Se o voto for válido, atualiza a contagem de votos
                     with lock:
                         movies_series_votes[vote]['votos'] += 1
-                    client_socket.sendall(f"Obrigado por votar em {movies_series_votes[vote]['nome']}!\n".encode())
+                    client_socket.sendall(f"Obrigado por votar no filme {movies_series_votes[vote]['nome']}!\n".encode())
                 else:
                     client_socket.sendall("Opção inválida! Tente novamente.\n".encode())
             else:
@@ -64,7 +72,7 @@ def handle_client(client_socket):
         print("Conexão com o cliente encerrada.")
 
 # Função principal do servidor
-def start_server():
+def start_server(): 
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind(("127.0.0.1", 5555))  # Escuta no localhost, porta 5555
     server.listen(5)  # Permite até 5 conexões simultâneas
@@ -74,6 +82,6 @@ def start_server():
         client_socket, addr = server.accept()
         print(f"Cliente conectado: {addr}")
         # Cria uma nova thread para lidar com cada cliente
-        threading.Thread(target=handle_client, args=(client_socket,)).start()
+        threading.Thread(target=handle_client, args=(client_socket,)).start() 
 
 start_server()
